@@ -3,13 +3,13 @@ self-configured Nextcloud server deployed on Ubuntu server
 
 ## Project status
 - Nextcloud deployed and working (local access)
-- In progress: wpn (WireGuard) for secure remote access
+- In progress: vpn (WireGuard) for secure remote access
 - Planned: backups + data recovery
 - Planned: user administration (users, onboarding, permissions)
 
 ## Repo structure
 - `setup/` — Nextcloud deployment notes
-- `networking/` — VPN and access notes (planned)
+- `networking/` — vpn and access notes (planned)
 - `security/` — HTTPS and firewall notes (planned)
 - `backups/` — backups and data recovery (planned)
 - `users/` — user administration and onboarding (planned)
