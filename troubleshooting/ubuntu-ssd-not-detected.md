@@ -14,5 +14,5 @@ Checked BIOS settings to confirm whether the SSD was being detected by the syste
 - Restarted the Ubuntu Server installer
 
 ## Outcome
-- The SSD appeared correctly in the installer
+- SSD appeared correctly in the installer
 - Ubuntu Server installed successfully on the SSD
