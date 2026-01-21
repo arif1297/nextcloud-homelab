@@ -1,6 +1,6 @@
 # Issue: Ubuntu Installer Not Detecting SSD
 
-## Observed Issues
+## Issues Observed
 - Ubuntu Server installer did not recognise SSD as a bootable storage device.
 - Installation could not continue due to no available storage device
 
