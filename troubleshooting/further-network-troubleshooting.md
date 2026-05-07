@@ -159,8 +159,8 @@ After reboot testing:
 - The network interface automatically came online
 - The server successfully received an ip address from the router
 - ssh became accessible immediately after boot
-- The server could now be managed remotely without requiring a monitor or keyboard
+- The server could now be managed remotely without requiring a monitor or keyboard plugged in
 
-The server is now configured for reliable headless management using ssh from my laptop plugged in
+The server is now configured for reliable headless management using ssh from my laptop
 
 ---
