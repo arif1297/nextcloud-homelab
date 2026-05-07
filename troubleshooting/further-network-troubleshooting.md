@@ -1,191 +1,166 @@
-# SSH and Network Troubleshooting
-
 ## Overview
 
-After system updates and reboots, the Ubuntu server became unreachable over SSH from my laptop. This document outlines the troubleshooting process used to diagnose and restore network connectivity and remote access.
+After rebooting my server, I was unable to ssh from my laptop. The issue was caused by the server’s networking configuration, which prevented the server from properly connecting to the network.
 
-The issue helped develop a better understanding of:
-
-- Linux networking
-- SSH connectivity
-- DHCP and IP addressing
-- Netplan configuration
-- Remote server management
+This troubleshooting process involved diagnosing the networking issue locally on the server, correcting the network configuration, and restoring remote ssh access.
 
 ---
 
-# Symptoms
+# The Problem
 
-The server became inaccessible remotely after rebooting.
+When attempting to ssh into the server, the connection failed.
 
-Issues observed included:
+Initial tests showed: host unreachable
 
-- SSH connection failures
-- Ping requests initially returning:
+This indicated that the laptop could not communicate with the server over the network.
 
-```bash
-Host unreachable
-```
-
-- Loss of remote management access
-- Requirement for direct local access to investigate further
+Since ssh relies on the server being connected to the network correctly, remote access was unavailable until the networking issue was resolved.
 
 ---
 
-# Initial Diagnostics
+# Diagnosing the Issue
 
-## 1. Verified Physical Connectivity
+To investigate further, I accessed the server locally using a monitor and keyboard.
 
-The following checks were completed first:
-
-- Server power state
-- Ethernet connection
-- Router connectivity
-- Network interface link lights
-
-This confirmed the issue was likely software or network configuration related rather than physical hardware failure.
-
----
-
-# Network Testing
-
-## 2. Ping Testing
-
-From the laptop, connectivity tests were performed using:
-
-```bash
-ping <server-ip>
-```
-
-Initially, the server could not be reached.
-
-After additional troubleshooting, ping responses later succeeded, confirming:
-
-- The server was online
-- The network path existed
-- The device was reachable over the LAN
-
-However, SSH access was still inconsistent.
-
----
-
-# Verifying IP Configuration
-
-## 3. Checking the Server IP Address
-
-The server IP configuration was checked locally using:
+The server’s ip configuration was checked using:
 
 ```bash
 ip a
 ```
 
-This confirmed the server had received a local IP address from the router.
+This helped confirm whether the server had received a valid ip address from the router.
 
-At this stage, the issue appeared to be related to network configuration rather than complete network failure.
+The output showed that the primary network interface:
+
+```bash
+enp1s0
+```
+
+was in a `DOWN` state and had not been assigned a valid LAN ip address.
+
+Only localhost and Docker bridge addresses were present, meaning the server had not successfully connected to the local network.
 
 ---
 
-# Netplan Investigation and Fix
+# Temporary Network Fix
 
-## 4. Investigating Network Configuration
-
-Further troubleshooting identified the issue as potentially relating to Ubuntu’s network configuration.
-
-Ubuntu Server uses **Netplan** to manage networking through YAML configuration files.
-
-The configuration files are located in:
+To restore connectivity temporarily, the network interface was manually brought online using:
 
 ```bash
-/etc/netplan/
+sudo ip link set enp1s0 up
 ```
 
-The directory contents were checked using:
+A DHCP lease was then requested from the router:
 
 ```bash
-cd /etc/netplan
-ls
+sudo dhclient enp1s0
 ```
 
-The network configuration file was then edited using:
+After running these commands:
+- server received a valid local ip address
+- ping requests succeeded
+- ssh access was restored successfully
 
-```bash
-sudo nano <config-file>.yaml
-```
-
-The configuration was reviewed to ensure:
-
-- The correct network interface was configured
-- DHCP was enabled correctly
-- Network settings were being applied properly after reboot
+This confirmed that the issue was related to the server’s network configuration during boot rather than a hardware fault.
 
 ---
 
-# Applying the Configuration
+# Investigating Netplan Configuration
 
-## 5. Applying Network Changes
+Ubuntu Server uses Netplan to manage networking.
 
-After editing the configuration, the updated settings were applied using:
+The existing configuration file was checked and contained:
+
+```yaml
+network:
+  ethernets: {}
+  version: 2
+```
+
+This meant:
+- No ethernet interfaces were configured
+- Ubuntu was not automatically bringing `enp1s0` online during boot
+
+The configuration was also being controlled by `cloud-init`, meaning changes would not persist after rebooting.
+
+This explained why the networking issue returned every time the server restarted.
+
+---
+
+# Permanent Resolution
+
+## Disabling Cloud-Init Network Overrides
+
+To stop cloud-init from overwriting the network configuration, the following file was created:
 
 ```bash
+sudo nano /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+```
+
+The following configuration was added:
+
+```yaml
+network: {config: disabled}
+```
+
+---
+
+## Creating a Persistent Netplan Configuration
+
+A new Netplan configuration file was then created:
+
+```bash
+sudo nano /etc/netplan/01-netcfg.yaml
+```
+
+Configuration used:
+
+```yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: true
+```
+
+---
+
+## Applying the Configuration
+
+The configuration changes were applied using:
+
+```bash
+sudo netplan generate
 sudo netplan apply
 ```
 
-This restarted and applied the networking configuration without requiring a full reinstall or rebuild.
-
----
-
-# Restoring SSH Access
-
-## 6. Testing Remote Access
-
-Once the network configuration had been corrected, SSH connectivity was tested again:
+The file permissions were also corrected:
 
 ```bash
-ssh username@server-ip
+sudo chmod 600 /etc/netplan/01-netcfg.yaml
 ```
 
-SSH access successfully returned after the networking issue was resolved.
+---
+
+# SSH Configuration
+
+To ensure remote access remained available after rebooting, the ssh service was configured to automatically start during boot:
+
+```bash
+sudo systemctl enable ssh
+```
 
 ---
 
-# What I Learned
+# Final Outcome
 
-## Linux Networking
+After reboot testing:
+- The network interface automatically came online
+- The server successfully received an ip address from the router
+- ssh became accessible immediately after boot
+- The server could now be managed remotely without requiring a monitor or keyboard
 
-This troubleshooting process improved understanding of:
-
-- DHCP and IP assignment
-- Linux networking services
-- Netplan YAML configurations
-- Network interface configuration
-- Remote server management
+The server is now configured for reliable headless management using ssh from my laptop plugged in
 
 ---
-
-## SSH Dependencies
-
-I also learned that SSH access depends on multiple components working correctly, including:
-
-- The server being powered on
-- Network services initializing correctly
-- A valid IP address being assigned
-- The SSH service running properly
-
----
-
-## Reboot Behaviour
-
-The issue also demonstrated that after reboots:
-
-- Networking services may take time to initialize
-- DHCP may reassign IP addresses
-- Remote services such as SSH can temporarily fail until networking stabilizes
-
----
-
-# Outcome
-
-- Restored SSH connectivity to the Ubuntu server
-- Corrected the server networking configuration
-- Improved understanding of Linux networking and remote administration
-- Gained practical experience troubleshooting real-world server connectivity issues
