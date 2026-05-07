@@ -1,17 +1,17 @@
 ## Overview
 
-After system reboots, server became unreachable over SSH from my laptop. This documents the troubleshooting process used to restore network connection and understand the underlying networking behaviour.
+After system reboots, server became unreachable over ssh from my laptop. This documents the troubleshooting process used to restore network connection and understand the underlying networking behaviour.
 
 ---
 
-# Symptoms
+# Issues
 
-- SSH connection failed
-- Ping requests initially returned: host unreachable
+- ssh connection failed
+- ping requests initially returned: host unreachable
 
 
-- Server appeared offline from the network
-- Required investigation directly on the server
+- server appeared offline from the network
+- required investigation directly on the server
 
 ---
 
@@ -21,9 +21,9 @@ After system reboots, server became unreachable over SSH from my laptop. This do
 
 Checked:
 
-- Server power state
-- Ethernet connection
-- Router connectivity
+- server power state
+- ethernet connection
+- router connectivity
 - lights on the physcial ethernet port on the pc
 
 ---
@@ -33,7 +33,7 @@ Checked:
 From laptop:
 
 ```
-ping <server-ip>
+ping server-ip
 ```
 
 Initially failed, then later succeeded after the server reconnected to the network.
@@ -54,13 +54,13 @@ Checked Ubuntu server IP locally:
 ip a
 ```
 
-Confirmed the server had received a valid LAN IP address.
+Confirmed the server had received a valid lan ip address.
 
 ---
 
 ## 4. Tested SSH Access
 
-Attempted SSH again:
+Attempted ssh again:
 
 ```bash
 ssh username@server-ip
